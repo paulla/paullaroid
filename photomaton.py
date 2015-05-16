@@ -182,7 +182,7 @@ def main():
             build_qrcode(finalpicname)
 
             subprocess.call(['nice', '-n -9', convert_path, '-quality',
-                             '90', laout_path,
+                             '90', layout_path,
                              "-gravity", "southwest", picNames[0],
                              "-geometry", "+100+1100", "-composite",
                              picNames[1], "-geometry", "+1030+1100",
