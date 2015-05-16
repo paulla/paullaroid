@@ -3,15 +3,23 @@
 import picamera
 import pygame
 import os
-from pygame.locals import *
+import subprocess
 import sys
 import time
-import io
-import subprocess
 import RPi.GPIO as GPIO
-import qrcode
+
+from pygame.locals import *
 from datetime import datetime
-from PIL import Image
+from qrcode import QRCode, constants
+
+msg_url = "http://photomaton.thsf.net/photomaton/"
+msg_title = "Une serie de 4 photos va etre prise "
+msg_find_your_pic = "Retrouvez la photo sur %s " % msg_url
+msg_do = 'Appuie sur le bouton ! '
+msg_assembly = "J'assemble vos photos ..."
+
+rsync_script = '/home/pi/photomaton/_data/rsync.sh'
+
 
 def switch_light(state=0):
     if state == 0:
@@ -25,47 +33,43 @@ def countdown_timer(ticks=2):
     Countdown with final text
     '''
     countdownFont = pygame.font.SysFont("monospace", 200)
-    for tick in range(ticks,0,-1):
-        countdownTextShow = countdownFont.render(str(tick), 0, pygame.Color('black'))
+    for tick in range(ticks, 0, -1):
+        countdownTextShow = countdownFont.render(str(tick), 0,
+                                                 pygame.Color('black'))
         countdownTextClear = countdownFont.render(str(tick), 0, bgColor)
-        screen.blit(countdownTextShow, (100,400))
+        screen.blit(countdownTextShow, (100, 400))
         pygame.display.update()
         time.sleep(1)
-        screen.blit(countdownTextClear, (100,400))
+        screen.blit(countdownTextClear, (100, 400))
         pygame.display.update()
     return
+
 
 def main():
     # Init framebuffer/touchscreen environment variables
     os.putenv('SDL_VIDEODRIVER', 'fbcon')
-    os.putenv('SDL_FBDEV'      , '/dev/fb0')
+    os.putenv('SDL_FBDEV', '/dev/fb0')
     os.putenv('SDL_NOMOUSE', '1')
-    
-    
+
     #DATA
     cameraImageWidth = 800
     cameraImageHeight = 600
-    #~ cameraVideoWidth = 1920
-    #~ cameraVideoHeight = 1080
-#    cameraImageWidth, cameraImageHeight = \
-#        picamera.PiCamera.MAX_IMAGE_RESOLUTION
-    
     cameraVideoWidth, cameraVideoHeight = \
         picamera.PiCamera.MAX_VIDEO_RESOLUTION
-    
+
     pathFile = '/home/pi/photomaton/_data/_pics'
-    textFinal = 'Souriez ;)'    
+    textFinal = 'Souriez ;)'
     global screenWidth
     screenWidth = 1232
     global screenHeight
     screenHeight = 992
-    
-    videoSurfaceWidth = cameraVideoWidth/2
-    videoSurfaceHeight = cameraVideoHeight/2
-    
-    photoWidth = cameraImageWidth/4
-    photoHeight = cameraImageHeight/4
-    
+
+    videoSurfaceWidth = cameraVideoWidth / 2
+    videoSurfaceHeight = cameraVideoHeight / 2
+
+    photoWidth = cameraImageWidth / 4
+    photoHeight = cameraImageHeight / 4
+
     pygame.init()
     pygame.mouse.set_visible(False)
     pygame.mixer.music.load('shot.wav')
@@ -76,11 +80,12 @@ def main():
     global screen
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     urlFont = pygame.font.SysFont("monospace-bold", 32)
-    urlTextShow = urlFont.render('Retrouvez la photo sur http://photomaton.thsf.net/', 0, pygame.Color('black'))
-    urlTextClear = urlFont.render('Retrouvez la photo sur http://photomaton.thsf.net/', 0, bgColor)
+    urlTextShow = urlFont.render('msg_find_your_pic/', 0,
+                                 pygame.Color('black'))
+    urlTextClear = urlFont.render('msg_find_your_pic/', 0, bgColor)
     screen.fill(bgColor)
-    screen.blit(urlTextShow , (350,940))
-    
+    screen.blit(urlTextShow, (350, 940))
+
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(11, GPIO.OUT)
     GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -105,20 +110,21 @@ def main():
                 if event.key == K_SPACE:
                     countdown_timer()
         smyleFont2 = pygame.font.SysFont("monospace", 50)
-        NoticeTextShow = smyleFont2.render('Appuie sur le bouton ! ', 0, pygame.Color('black'))
-        NoticeTextClear = smyleFont2.render('Appuie sur le bouton ! ', 0, bgColor)
-        screen.blit(NoticeTextShow, (50,750))
+        NoticeTextShow = smyleFont2.render(msg_do, 0, pygame.Color('black'))
+        NoticeTextClear = smyleFont2.render(msg_do, 0, bgColor)
+        screen.blit(NoticeTextShow, (50, 750))
         pygame.display.update()
         if GPIO.input(15) == False:
             smyleFont = pygame.font.SysFont("monospace", 100)
             smyleFont2 = pygame.font.SysFont("monospace", 50)
-            wifiTextShow = smyleFont2.render('Une serie de 4 photos va etre prise ', 0, pygame.Color('black'))
-            wifiTextClear = smyleFont2.render('Une serie de 4 photos va etre prise ', 0, bgColor)
-            screen.blit(NoticeTextClear, (50,750))
-            screen.blit(wifiTextShow, (50,750))
+            wifiTextShow = smyleFont2.render(msg_title, 0,
+                                             pygame.Color('black'))
+            wifiTextClear = smyleFont2.render(msg_title, 0, bgColor)
+            screen.blit(NoticeTextClear, (50, 750))
+            screen.blit(wifiTextShow, (50, 750))
             pygame.display.update()
             time.sleep(3)
-            screen.blit(wifiTextClear, (50,750))
+            screen.blit(wifiTextClear, (50, 750))
             pygame.display.update()
             frame = nb = 4
             camera.stop_preview()
@@ -127,74 +133,73 @@ def main():
             #~ time.sleep(1)
             picNames = []
             now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            for photoNb in range(1,sequencePhoto+1,1):
+            for photoNb in range(1, sequencePhoto + 1, 1):
                 countdown_timer()
-                smyleTextShow = smyleFont.render(textFinal, 0, pygame.Color('black'))
+                smyleTextShow = smyleFont.render(textFinal, 0,
+                                                 pygame.Color('black'))
                 smyleTextClear = smyleFont.render(textFinal, 0, bgColor)
-                screen.blit(smyleTextShow, (510,40))
+                screen.blit(smyleTextShow, (510, 40))
                 pygame.display.update()
                 time.sleep(1)
                 switch_light()
                 pygame.mixer.music.play()
-                filename = '%s_%02d.jpg' % (os.path.join(pathFile,now), photoNb)
+                filename = '%s_%02d.jpg' % (os.path.join(pathFile, now),
+                                            photoNb)
                 picNames.append(filename)
                 camera.capture(filename)
                 state = GPIO.input(11)
                 time.sleep(0.5)
                 switch_light(state)
-                screen.blit(smyleTextClear, (510,40))
+                screen.blit(smyleTextClear, (510, 40))
                 pygame.display.update()
             assembleFont = pygame.font.SysFont("monospace", 70)
-            waitTextShow = assembleFont.render("J'assemble vos photos ...", 0, pygame.Color('black'))
-            waitTextClear = assembleFont.render("J'assemble vos photos ...", 0, bgColor)
-            screen.blit(waitTextShow, (10,40))
+            waitTextShow = assembleFont.render(msg_assembly, 0,
+                                               pygame.Color('black'))
+            waitTextClear = assembleFont.render(msg_assembly, 0, bgColor)
+            screen.blit(waitTextShow, (10, 40))
             pygame.display.update()
-            camera.preview_window = (32, 24, videoSurfaceWidth, videoSurfaceHeight)
+            camera.preview_window = (32, 24, videoSurfaceWidth,
+                                     videoSurfaceHeight)
             camera.resolution = (videoSurfaceWidth, videoSurfaceHeight)
-            #bgPic = Image.open('./layout_2x2_648x486_simon2.png')
-            #pic01 = Image.open(picNames[0])
-            #pic02 = Image.open(picNames[1])
-            #pic03 = Image.open(picNames[2])
-            #pic04 = Image.open(picNames[3])
-            #bgPic.paste(pic01.resize((648,486)),(136,136))
-            #bgPic.paste(pic02.resize((648,486)),(834,136))
-            #bgPic.paste(pic03.resize((648,486)),(136,672))
-            #bgPic.paste(pic04.resize((648,486)),(834,672))
-            #bgPic.save(%s_2x2.png' %(os.path.join(pathFile,now)))
-            #bgPic.resize((1618/8, 1594/8)).save('%s_2x2.thumbnail' %(os.path.join(pathFile,now)),format='png')
-            finalpicname = '%sTHSF.jpg' %(now)
-            finalpic = '%sTHSF.jpg' %(os.path.join(pathFile,now))
-            qr = qrcode.QRCode(version=1,error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=8, border=1,)
-            qr.add_data('http://photomaton.thsf.net/photomaton/'+finalpicname)
+            finalpicname = '%sTHSF.jpg' % (now)
+            finalpic = '%sTHSF.jpg' % (os.path.join(pathFile, now))
+            qr = QRCode(version=1,
+                        error_correction=constants.ERROR_CORRECT_L,
+                        box_size=8, border=1,)
+            qr.add_data(msg_url + finalpicname)
             qr.make()
             img = qr.make_image()
             img.save('qrcode.png')
-            subprocess.call(['nice', '-n -9', '/usr/bin/convert', '-quality', '90', '/home/pi/photomaton/layout_THSF.png', "-gravity", "southwest", picNames[0] , "-geometry", "+100+1100", "-composite", picNames[1] , "-geometry", "+1030+1100", "-composite", picNames[2] , "-geometry", "+100+400", "-composite", picNames[3], "-geometry", "+1030+400", "-composite", 'qrcode.png', '-geometry', '+700+100', '-composite', finalpic])
+            subprocess.call(['nice', '-n -9', '/usr/bin/convert', '-quality',
+                             '90', '/home/pi/photomaton/layout_THSF.png',
+                             "-gravity", "southwest", picNames[0],
+                             "-geometry", "+100+1100", "-composite",
+                             picNames[1], "-geometry", "+1030+1100",
+                             "-composite", picNames[2], "-geometry",
+                             "+100+400", "-composite", picNames[3],
+                             "-geometry", "+1030+400", "-composite",
+                             'qrcode.png', '-geometry', '+700+100',
+                             '-composite', finalpic])
             layout = pygame.image.load(finalpic)
             qrcodelayout = pygame.image.load('qrcode.png')
             screen.fill(bgColor)
-            #screen.blit(wifiTextShow, (20,960))
-            screen.blit(pygame.transform.scale(layout, (1920/2, 1920/2)), (136,16))
-#            screen.blit(pygame.transform.scale(qrcodelayout, (150,150)),(450,800))
-            #bgPic.close()
-            #pic01.close()
-            #pic02.close()
-            #pic03.close()
-            #pic04.close()
-            screen.blit(urlTextShow , (350,950))
+            screen.blit(pygame.transform.scale(layout, (1920 / 2, 1920 / 2)),
+                                               (136, 16))
+            screen.blit(urlTextShow, (350, 950))
             pygame.display.update()
-            subprocess.call(['/usr/bin/convert', finalpic, '-resize', '200x200', finalpic + '.thumbnail.jpg'])
-            subprocess.call(['/home/pi/photomaton/_data/rsync.sh'])
+            subprocess.call(['/usr/bin/convert', finalpic,
+                             '-resize', '200x200',
+                             finalpic + '.thumbnail.jpg'])
+            subprocess.call([rsync_script])
             time.sleep(18)
             screen.fill(bgColor)
-            screen.blit(urlTextShow , (350,940))
+            screen.blit(urlTextShow, (350, 940))
             pygame.display.update()
             camera.start_preview()
 
 
 if __name__ == "__main__":
-    import sys
     try:
         main()
     except:
-        print 'Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1] 
+        print 'Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1]
