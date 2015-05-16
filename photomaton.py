@@ -19,6 +19,20 @@ msg_do = 'Appuie sur le bouton ! '
 msg_assembly = "J'assemble vos photos ..."
 
 rsync_script = '/home/pi/photomaton/_data/rsync.sh'
+convert_path = '/usr/bin/convert'
+qrcode_name = "qrcode.png"
+layout_path = '/home/pi/photomaton/layout_THSF.png'
+
+
+def build_qrcode(finalpicname, msg_url=msg_url, qrcode_name=qrcode_name):
+
+    qr = QRCode(version=1,
+                error_correction=constants.ERROR_CORRECT_L,
+                box_size=8, border=1,)
+    qr.add_data(msg_url + finalpicname)
+    qr.make()
+    img = qr.make_image()
+    img.save(qrcode_name)
 
 
 def switch_light(state=0):
@@ -163,31 +177,28 @@ def main():
             camera.resolution = (videoSurfaceWidth, videoSurfaceHeight)
             finalpicname = '%sTHSF.jpg' % (now)
             finalpic = '%sTHSF.jpg' % (os.path.join(pathFile, now))
-            qr = QRCode(version=1,
-                        error_correction=constants.ERROR_CORRECT_L,
-                        box_size=8, border=1,)
-            qr.add_data(msg_url + finalpicname)
-            qr.make()
-            img = qr.make_image()
-            img.save('qrcode.png')
-            subprocess.call(['nice', '-n -9', '/usr/bin/convert', '-quality',
-                             '90', '/home/pi/photomaton/layout_THSF.png',
+
+            # build qrcode
+            build_qrcode(finalpicname)
+
+            subprocess.call(['nice', '-n -9', convert_path, '-quality',
+                             '90', laout_path,
                              "-gravity", "southwest", picNames[0],
                              "-geometry", "+100+1100", "-composite",
                              picNames[1], "-geometry", "+1030+1100",
                              "-composite", picNames[2], "-geometry",
                              "+100+400", "-composite", picNames[3],
                              "-geometry", "+1030+400", "-composite",
-                             'qrcode.png', '-geometry', '+700+100',
+                             qrcode_name, '-geometry', '+700+100',
                              '-composite', finalpic])
             layout = pygame.image.load(finalpic)
-            qrcodelayout = pygame.image.load('qrcode.png')
+            qrcodelayout = pygame.image.load(qrcode_name)
             screen.fill(bgColor)
             screen.blit(pygame.transform.scale(layout, (1920 / 2, 1920 / 2)),
                                                (136, 16))
             screen.blit(urlTextShow, (350, 950))
             pygame.display.update()
-            subprocess.call(['/usr/bin/convert', finalpic,
+            subprocess.call([convert_path, finalpic,
                              '-resize', '200x200',
                              finalpic + '.thumbnail.jpg'])
             subprocess.call([rsync_script])
