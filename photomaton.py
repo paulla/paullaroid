@@ -94,9 +94,9 @@ def main():
     global screen
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     urlFont = pygame.font.SysFont("monospace-bold", 32)
-    urlTextShow = urlFont.render('msg_find_your_pic/', 0,
+    urlTextShow = urlFont.render(msg_find_your_pic, 0,
                                  pygame.Color('black'))
-    urlTextClear = urlFont.render('msg_find_your_pic/', 0, bgColor)
+    urlTextClear = urlFont.render(msg_find_your_pic, 0, bgColor)
     screen.fill(bgColor)
     screen.blit(urlTextShow, (350, 940))
 
