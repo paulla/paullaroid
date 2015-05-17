@@ -247,9 +247,7 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    try:
-        args = parser()
-        config = get_config(args.config)
-        main(config)
-    except:
-        print('Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1])
+
+    args = parser()
+    config = get_config(args.config)
+    main(config)
