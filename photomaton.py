@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
+"""PauLLA Photomaton, exposed on THDF 2015."""
 
+import argparse
 import picamera
 import pygame
 import os
@@ -8,27 +10,46 @@ import sys
 import time
 import RPi.GPIO as GPIO
 
-from pygame.locals import *
+from pygame.locals import KEYDOWN, K_ESCAPE, K_SPACE, K_q, QUIT
 from datetime import datetime
 from qrcode import QRCode, constants
 
-msg_url = "http://photomaton.thsf.net/photomaton/"
-msg_title = "Une serie de 4 photos va etre prise "
-msg_find_your_pic = "Retrouvez la photo sur %s " % msg_url
-msg_do = 'Appuie sur le bouton ! '
-msg_assembly = "J'assemble vos photos ..."
 
-rsync_script = '/home/pi/photomaton/_data/rsync.sh'
-convert_path = '/usr/bin/convert'
-qrcode_name = "qrcode.png"
-layout_path = '/home/pi/photomaton/layout_THSF.png'
+def parser():
+    """Build parser."""
+    cfg = '%s.ini' % os.path.basename(__file__)
+    argp = argparse.ArgumentParser(description=__doc__)
+    argp.add_argument('-c', '--config', default='%s' % cfg,
+                      help='config filename, default is %s' % cfg)
+
+    return argp.parse_args()
 
 
-def build_qrcode(finalpicname, msg_url=msg_url, qrcode_name=qrcode_name):
+def get_config(filename):
+    parser = SafeConfigParser()
+    parser.read(filename)
+    return parser._sections
 
+
+def get_font(font, size):
+    """Get asked font or pygame.default."""
+    available = pygame.font.get_fonts()
+    if font.lower() in available:
+        return pygame.font.SysFont(font.lower(), size)
+    else:
+        return pygame.font.Font(None, size)
+
+
+def create_label(text, font, size, color=pygame.Color('black')):
+    """Create pygame label."""
+    font = get_font(font, size)
+    return font.render(text, True, color)
+
+
+def build_qrcode(finalpicname, msg_url, qrcode_name):
     qr = QRCode(version=1,
                 error_correction=constants.ERROR_CORRECT_L,
-                box_size=8, border=1,)
+                box_size=8, border=1, )
     qr.add_data(msg_url + finalpicname)
     qr.make()
     img = qr.make_image()
@@ -36,181 +57,199 @@ def build_qrcode(finalpicname, msg_url=msg_url, qrcode_name=qrcode_name):
 
 
 def switch_light(state=0):
-    if state == 0:
-        GPIO.output(11, 1)
-    else:
-        GPIO.output(11, 0)
+    """Switch light."""
+    GPIO.output(11, not state)
 
 
-def countdown_timer(ticks=2):
-    '''
-    Countdown with final text
-    '''
-    countdownFont = pygame.font.SysFont("monospace", 200)
+def countdown_timer(screen, bg_color, ticks=2):
+    """Countdown with final text."""
+
     for tick in range(ticks, 0, -1):
-        countdownTextShow = countdownFont.render(str(tick), 0,
-                                                 pygame.Color('black'))
-        countdownTextClear = countdownFont.render(str(tick), 0, bgColor)
-        screen.blit(countdownTextShow, (100, 400))
+        countdown_text_show = create_label(str(tick), config['pyg']['font'],
+                                           200, pygame.Color('black'))
+        countdown_text_clear = create_label(str(tick), config['pyg']['font'],
+                                            200, bg_color)
+        screen.blit(countdown_text_show, (100, 400))
         pygame.display.update()
         time.sleep(1)
-        screen.blit(countdownTextClear, (100, 400))
+        screen.blit(countdown_text_clear, (100, 400))
         pygame.display.update()
-    return
 
 
-def main():
+def setup_gpio():
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(11, GPIO.OUT)
+    GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+
+def setup_env():
     # Init framebuffer/touchscreen environment variables
     os.putenv('SDL_VIDEODRIVER', 'fbcon')
     os.putenv('SDL_FBDEV', '/dev/fb0')
     os.putenv('SDL_NOMOUSE', '1')
 
-    #DATA
-    cameraImageWidth = 800
-    cameraImageHeight = 600
-    cameraVideoWidth, cameraVideoHeight = \
-        picamera.PiCamera.MAX_VIDEO_RESOLUTION
 
-    pathFile = '/home/pi/photomaton/_data/_pics'
-    textFinal = 'Souriez ;)'
-    global screenWidth
-    screenWidth = 1232
-    global screenHeight
-    screenHeight = 992
+def main(cfg):
+    setup_env()
 
-    videoSurfaceWidth = cameraVideoWidth / 2
-    videoSurfaceHeight = cameraVideoHeight / 2
+    # DATA
 
-    photoWidth = cameraImageWidth / 4
-    photoHeight = cameraImageHeight / 4
+    cam_video_width, cam_video_height = picamera.PiCamera.MAX_VIDEO_RESOLUTION
 
+    video_surface_width = cam_video_width / 2
+    video_surface_height = cam_video_height / 2
+
+    bg_color = pygame.Color(config['pyg']['screen_bg_color'])
     pygame.init()
     pygame.mouse.set_visible(False)
     pygame.mixer.music.load('shot.wav')
-    #Ouverture de la fenêtre Pygame
-    global bgColor
-    bgColor = pygame.Color('ivory')
-    #fullscreen settings :
-    global screen
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    urlFont = pygame.font.SysFont("monospace-bold", 32)
-    urlTextShow = urlFont.render(msg_find_your_pic, 0,
-                                 pygame.Color('black'))
-    urlTextClear = urlFont.render(msg_find_your_pic, 0, bgColor)
-    screen.fill(bgColor)
-    screen.blit(urlTextShow, (350, 940))
 
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(11, GPIO.OUT)
-    GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    #Rafraîchissement de l'écran
+    # fullscreen settings :
+
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen.fill(bg_color)
+
+    url_text_show = create_label(cfg['msgs']['msg_find_your_pic'],
+                                 config['pyg']['font-bold'], 32,
+                                 pygame.Color('black'))
+
+    screen.blit(url_text_show, (350, 940))
+
+    setup_gpio()
+
     camera = picamera.PiCamera()
     pygame.display.flip()
-    #~ camera = picamera.PiCamera()
+
     camera.preview_fullscreen = False
-    #~ camera.vflip = True
     camera.brightness = 50
-    camera.resolution = (videoSurfaceWidth, videoSurfaceHeight)
-    camera.preview_window = (140, 200, videoSurfaceWidth, videoSurfaceHeight)
+    camera.resolution = (video_surface_width, video_surface_height)
+    camera.preview_window = (140, 200, video_surface_width,
+                             video_surface_height)
     camera.start_preview()
-    loopValue = True
-    while loopValue:
+
+    loop_value = True
+    while loop_value:
         for event in pygame.event.get():
             if event.type == QUIT:
-                loopValue = False
+                loop_value = False
             if event.type == KEYDOWN:
                 if event.key == K_q or event.key == K_ESCAPE:
-                    loopValue = False
+                    loop_value = False
                 if event.key == K_SPACE:
-                    countdown_timer()
-        smyleFont2 = pygame.font.SysFont("monospace", 50)
-        NoticeTextShow = smyleFont2.render(msg_do, 0, pygame.Color('black'))
-        NoticeTextClear = smyleFont2.render(msg_do, 0, bgColor)
-        screen.blit(NoticeTextShow, (50, 750))
+                    countdown_timer(screen, bg_color)
+
+        notice_text_show = create_label(cfg['msgs']['msg_do'],
+                                        config['pyg']['font'], 50,
+                                        pygame.Color('black'))
+        notice_text_clear = create_label(cfg['msgs']['msg_do'],
+                                         config['pyg']['font'], 50,
+                                         bg_color)
+
+        screen.blit(notice_text_show, (50, 750))
         pygame.display.update()
-        if GPIO.input(15) == False:
-            smyleFont = pygame.font.SysFont("monospace", 100)
-            smyleFont2 = pygame.font.SysFont("monospace", 50)
-            wifiTextShow = smyleFont2.render(msg_title, 0,
-                                             pygame.Color('black'))
-            wifiTextClear = smyleFont2.render(msg_title, 0, bgColor)
-            screen.blit(NoticeTextClear, (50, 750))
-            screen.blit(wifiTextShow, (50, 750))
+
+        # catch GPIO.input
+        if not GPIO.input(15):
+
+            title_text_show = create_label(cfg['msgs']['msg_title'],
+                                           config['pyg']['font'], 50,
+                                           pygame.Color('black'))
+
+            title_text_clear = create_label(cfg['msgs']['msg_title'],
+                                            config['pyg']['font'], 50,
+                                            bg_color)
+
+            smyle_text_show = create_label(cfg['msgs']['msg_smile'],
+                                           config['pyg']['font'], 100,
+                                           pygame.Color('black'))
+            smyle_text_clear = create_label(cfg['msgs']['msg_smile'],
+                                            config['pyg']['font'], 100,
+                                            bg_color)
+
+            screen.blit(notice_text_clear, (50, 750))
+            screen.blit(title_text_show, (50, 750))
             pygame.display.update()
             time.sleep(3)
-            screen.blit(wifiTextClear, (50, 750))
+            screen.blit(title_text_clear, (50, 750))
             pygame.display.update()
-            frame = nb = 4
             camera.stop_preview()
-            camera.resolution = (cameraImageWidth, cameraImageHeight)
-            sequencePhoto = 4
-            #~ time.sleep(1)
-            picNames = []
-            now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            for photoNb in range(1, sequencePhoto + 1, 1):
-                countdown_timer()
-                smyleTextShow = smyleFont.render(textFinal, 0,
-                                                 pygame.Color('black'))
-                smyleTextClear = smyleFont.render(textFinal, 0, bgColor)
-                screen.blit(smyleTextShow, (510, 40))
+            camera.resolution = (int(config['cam']['cam_image_width']),
+                                 int(config['cam']['cam_image_height']))
+            seq_photo = int(config['prog']['seq_photo'])
+            # time.sleep(1)
+            pic_names = []
+            now = datetime.now().strftime(config['prog']['date_fmt'])
+            for photo_nb in range(1, seq_photo + 1):
+                countdown_timer(screen, bg_color)
+
+                screen.blit(smyle_text_show, (510, 40))
                 pygame.display.update()
                 time.sleep(1)
                 switch_light()
                 pygame.mixer.music.play()
-                filename = '%s_%02d.jpg' % (os.path.join(pathFile, now),
-                                            photoNb)
-                picNames.append(filename)
-                camera.capture(filename)
+                fname = '%s_%02d.jpg' % (os.path.join(cfg['paths']['pics_dir'],
+                                                      now),
+                                         photo_nb)
+                pic_names.append(fname)
+                camera.capture(fname)
                 state = GPIO.input(11)
                 time.sleep(0.5)
                 switch_light(state)
-                screen.blit(smyleTextClear, (510, 40))
+                screen.blit(smyle_text_clear, (510, 40))
                 pygame.display.update()
-            assembleFont = pygame.font.SysFont("monospace", 70)
-            waitTextShow = assembleFont.render(msg_assembly, 0,
-                                               pygame.Color('black'))
-            waitTextClear = assembleFont.render(msg_assembly, 0, bgColor)
-            screen.blit(waitTextShow, (10, 40))
+
+            wait_text_show = create_label(cfg['msgs']['msg_assembly'],
+                                          config['pyg']['font'], 70,
+                                          pygame.Color('black'))
+
+            screen.blit(wait_text_show, (10, 40))
             pygame.display.update()
-            camera.preview_window = (32, 24, videoSurfaceWidth,
-                                     videoSurfaceHeight)
-            camera.resolution = (videoSurfaceWidth, videoSurfaceHeight)
-            finalpicname = '%sTHSF.jpg' % (now)
-            finalpic = '%sTHSF.jpg' % (os.path.join(pathFile, now))
+            camera.preview_window = (32, 24, video_surface_width,
+                                     video_surface_height)
+            camera.resolution = (video_surface_width, video_surface_height)
+            finalpicname = '%s%s' % (now, config['prog']['pic_name'])
+            finalpic = '%s%s' % (os.path.join(config['paths']['pics_dir'], now),
+                                 config['prog']['pic_name'])
 
             # build qrcode
-            build_qrcode(finalpicname)
+            build_qrcode(finalpicname, cfg['msgs']['msg_url'],
+                         cfg['msgs']['qrcode_name'])
 
-            subprocess.call(['nice', '-n -9', convert_path, '-quality',
-                             '90', layout_path,
-                             "-gravity", "southwest", picNames[0],
+            subprocess.call(['nice', '-n -9', config['paths']['convert_path'],
+                             '-quality', '90', config['paths']['layout_path'],
+                             "-gravity", "southwest", pic_names[0],
                              "-geometry", "+100+1100", "-composite",
-                             picNames[1], "-geometry", "+1030+1100",
-                             "-composite", picNames[2], "-geometry",
-                             "+100+400", "-composite", picNames[3],
+                             pic_names[1], "-geometry", "+1030+1100",
+                             "-composite", pic_names[2], "-geometry",
+                             "+100+400", "-composite", pic_names[3],
                              "-geometry", "+1030+400", "-composite",
                              qrcode_name, '-geometry', '+700+100',
                              '-composite', finalpic])
+
             layout = pygame.image.load(finalpic)
-            qrcodelayout = pygame.image.load(qrcode_name)
-            screen.fill(bgColor)
+            # qrcodelayout = pygame.image.load(qrcode_name)
+            screen.fill(bg_color)
             screen.blit(pygame.transform.scale(layout, (1920 / 2, 1920 / 2)),
-                                               (136, 16))
-            screen.blit(urlTextShow, (350, 950))
+                        (136, 16))
+            # screen.blit(pygame.transform.scale(qrcodelayout, (150,150)),
+            #             (450,800))
+            screen.blit(url_text_show, (350, 950))
             pygame.display.update()
-            subprocess.call([convert_path, finalpic,
+            subprocess.call([config['paths']['convert_path'], finalpic,
                              '-resize', '200x200',
                              finalpic + '.thumbnail.jpg'])
-            subprocess.call([rsync_script])
+            subprocess.call([config['paths']['rsync_script']])
             time.sleep(18)
-            screen.fill(bgColor)
-            screen.blit(urlTextShow, (350, 940))
+            screen.fill(bg_color)
+            screen.blit(url_text_show, (350, 940))
             pygame.display.update()
             camera.start_preview()
 
 
 if __name__ == "__main__":
     try:
-        main()
+        args = parser()
+        config = get_config(args.config)
+        main(config)
     except:
-        print 'Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1]
+        print('Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1])
