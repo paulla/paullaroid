@@ -20,10 +20,10 @@ from ConfigParser import SafeConfigParser
 def parser():
     """Build parser."""
     name = os.path.basename(__file__)
-    cfg = '%s.ini' % os.path.splitext(name)[0]
+    config = '%s.ini' % os.path.splitext(name)[0]
     argp = argparse.ArgumentParser(description=__doc__)
-    argp.add_argument('-c', '--config', default='%s' % cfg,
-                      help='config filename, default is %s' % cfg)
+    argp.add_argument('-c', '--config', default='%s' % config,
+                      help='config filename, default is %s' % config)
 
     return argp.parse_args()
 
@@ -64,7 +64,7 @@ def switch_light(state=0):
     GPIO.output(11, not state)
 
 
-def countdown_timer(screen, bg_color, ticks=2):
+def countdown_timer(screen, config, bg_color, ticks=2):
     """Countdown with final text."""
 
     for tick in range(ticks, 0, -1):
@@ -112,7 +112,7 @@ def main(config):
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     screen.fill(bg_color)
 
-    url_text_show = create_label(cfg['msgs']['msg_find_your_pic'],
+    url_text_show = create_label(config['msgs']['msg_find_your_pic'],
                                  config['pyg']['font-bold'], 32,
                                  pygame.Color('black'))
 
@@ -139,12 +139,12 @@ def main(config):
                 if event.key == K_q or event.key == K_ESCAPE:
                     loop_value = False
                 if event.key == K_SPACE:
-                    countdown_timer(screen, bg_color)
+                    countdown_timer(screen, config, bg_color)
 
-        notice_text_show = create_label(cfg['msgs']['msg_do'],
+        notice_text_show = create_label(config['msgs']['msg_do'],
                                         config['pyg']['font'], 50,
                                         pygame.Color('black'))
-        notice_text_clear = create_label(cfg['msgs']['msg_do'],
+        notice_text_clear = create_label(config['msgs']['msg_do'],
                                          config['pyg']['font'], 50,
                                          bg_color)
 
@@ -154,18 +154,18 @@ def main(config):
         # catch GPIO.input
         if not GPIO.input(15):
 
-            title_text_show = create_label(cfg['msgs']['msg_title'],
+            title_text_show = create_label(config['msgs']['msg_title'],
                                            config['pyg']['font'], 50,
                                            pygame.Color('black'))
 
-            title_text_clear = create_label(cfg['msgs']['msg_title'],
+            title_text_clear = create_label(config['msgs']['msg_title'],
                                             config['pyg']['font'], 50,
                                             bg_color)
 
-            smyle_text_show = create_label(cfg['msgs']['msg_smile'],
+            smyle_text_show = create_label(config['msgs']['msg_smile'],
                                            config['pyg']['font'], 100,
                                            pygame.Color('black'))
-            smyle_text_clear = create_label(cfg['msgs']['msg_smile'],
+            smyle_text_clear = create_label(config['msgs']['msg_smile'],
                                             config['pyg']['font'], 100,
                                             bg_color)
 
@@ -183,14 +183,14 @@ def main(config):
             pic_names = []
             now = datetime.now().strftime(config['prog']['date_fmt'])
             for photo_nb in range(1, seq_photo + 1):
-                countdown_timer(screen, bg_color)
+                countdown_timer(screen, config, bg_color)
 
                 screen.blit(smyle_text_show, (510, 40))
                 pygame.display.update()
                 time.sleep(1)
                 switch_light()
                 pygame.mixer.music.play()
-                fname = '%s_%02d.jpg' % (os.path.join(cfg['paths']['pics_dir'],
+                fname = '%s_%02d.jpg' % (os.path.join(config['paths']['pics_dir'],
                                                       now),
                                          photo_nb)
                 pic_names.append(fname)
@@ -201,7 +201,7 @@ def main(config):
                 screen.blit(smyle_text_clear, (510, 40))
                 pygame.display.update()
 
-            wait_text_show = create_label(cfg['msgs']['msg_assembly'],
+            wait_text_show = create_label(config['msgs']['msg_assembly'],
                                           config['pyg']['font'], 70,
                                           pygame.Color('black'))
 
@@ -215,8 +215,8 @@ def main(config):
                                  config['prog']['pic_name'])
 
             # build qrcode
-            build_qrcode(finalpicname, cfg['msgs']['msg_url'],
-                         cfg['msgs']['qrcode_name'])
+            build_qrcode(finalpicname, config['msgs']['msg_url'],
+                         config['qrcode']['qrcode_name'])
 
             subprocess.call(['nice', '-n -9', config['paths']['convert_path'],
                              '-quality', '90', config['paths']['layout_path'],
@@ -226,7 +226,8 @@ def main(config):
                              "-composite", pic_names[2], "-geometry",
                              "+100+400", "-composite", pic_names[3],
                              "-geometry", "+1030+400", "-composite",
-                             qrcode_name, '-geometry', '+700+100',
+                             config['qrcode']['qrcode_name'],
+                             '-geometry', '+700+100',
                              '-composite', finalpic])
 
             layout = pygame.image.load(finalpic)
@@ -252,5 +253,5 @@ def main(config):
 if __name__ == "__main__":
 
     args = parser()
-    cfg = get_config(args.config)
-    main(cfg)
+    config = get_config(args.config)
+    main(config)
