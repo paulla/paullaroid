@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: UTF-8 -*-
 """PauLLA Photomaton, exposed on THDF 2015."""
 
@@ -13,11 +14,13 @@ import RPi.GPIO as GPIO
 from pygame.locals import KEYDOWN, K_ESCAPE, K_SPACE, K_q, QUIT
 from datetime import datetime
 from qrcode import QRCode, constants
+from ConfigParser import SafeConfigParser
 
 
 def parser():
     """Build parser."""
-    cfg = '%s.ini' % os.path.basename(__file__)
+    name = os.path.basename(__file__)
+    cfg = '%s.ini' % os.path.splitext(name)[0]
     argp = argparse.ArgumentParser(description=__doc__)
     argp.add_argument('-c', '--config', default='%s' % cfg,
                       help='config filename, default is %s' % cfg)
@@ -89,7 +92,7 @@ def setup_env():
     os.putenv('SDL_NOMOUSE', '1')
 
 
-def main(cfg):
+def main(config):
     setup_env()
 
     # DATA
@@ -249,5 +252,5 @@ def main(cfg):
 if __name__ == "__main__":
 
     args = parser()
-    config = get_config(args.config)
-    main(config)
+    cfg = get_config(args.config)
+    main(cfg)
