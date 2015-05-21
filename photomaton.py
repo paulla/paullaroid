@@ -31,6 +31,7 @@ def parser():
 def get_config(filename):
     parser = SafeConfigParser()
     parser.read(filename)
+    #import pdb; pdb.set_trace()
     return parser._sections
 
 
@@ -46,7 +47,7 @@ def get_font(font, size):
 def create_label(text, font, size, color=pygame.Color('black')):
     """Create pygame label."""
     font = get_font(font, size)
-    return font.render(text, True, color)
+    return font.render(text, 0, color)
 
 
 def build_qrcode(finalpicname, msg_url, qrcode_name):
@@ -154,11 +155,11 @@ def main(config):
         # catch GPIO.input
         if not GPIO.input(15):
 
-            title_text_show = create_label(config['msgs']['msg_title'],
+            title_text_show = create_label(config['msgs']['msg_title'].decode('utf-8'),
                                            config['pyg']['font'], 50,
                                            pygame.Color('black'))
 
-            title_text_clear = create_label(config['msgs']['msg_title'],
+            title_text_clear = create_label(config['msgs']['msg_title'].decode('utf-8'),
                                             config['pyg']['font'], 50,
                                             bg_color)
 
