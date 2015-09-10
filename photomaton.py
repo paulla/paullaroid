@@ -79,28 +79,28 @@ def countdown_timer(screen, config, bg_color, ticks=2):
         pygame.display.update()
 
 def pics_assembly(config, pic_names, finalpicname, finalpic):
-    liste = []
-    if config['convert']['pre_options'] :
-        liste.extend([config['convert']['pre_options']])
+    args = []
+    if config['convert']['pre_options']:
+        args.extend([config['convert']['pre_options']])
 
-    liste.extend([config['convert']['binary_path'],
+    args.extend([config['convert']['binary_path'],
                 '-quality', config['convert']['quality'], 
                 config['paths']['layout_path'],
-                 '-gravity', config['convert']['gravity']] ) 
+                 '-gravity', config['convert']['gravity']]) 
             
-    for photo_id in range(0, int(config['pics']['seq_photo']) ):
-        liste.extend([pic_names[photo_id], "-geometry",
-                     config['pics']['position'+photo_id],'-composite'])
+    for photo_id in range(0, int(config['pics']['seq_photo'])):
+        args.extend([pic_names[photo_id], "-geometry",
+                     config['pics']['position' + photo_id],'-composite'])
             
-    if config['qrcode'] :
+    if config['qrcode']:
     # build qrcode
         build_qrcode(finalpicname, config['msgs']['msg_url'],
                      config['qrcode']['qrcode_name'])
-        liste.extend([config['qrcode']['qrcode_name'], '-geometry', 
+        args.extend([config['qrcode']['qrcode_name'], '-geometry', 
                       config['qrcode']['position'], '-composite'])
 
     
-    subprocess.call(liste)
+    subprocess.call(args)
 
 
 def pics_assembly2(config):
@@ -116,7 +116,7 @@ def pics_assembly2(config):
                              '-geometry', '+700+100',
                              '-composite', finalpic])
 
-make_thumbnail(config, finalpic):
+def make_thumbnail(config, finalpic):
     subprocess.call([config['paths']['convert_path'], finalpic,
                      '-resize', config['pics']['thumbnail_size'],
                              finalpic + '.thumbnail.jpg'])
@@ -265,8 +265,10 @@ def main(config):
             pygame.display.update()
             
             make_thumbnail(config, finalpic)
-
-            subprocess.call([config['paths']['rsync_script']])
+            
+            if config['paths']['rsync_script']:
+                subprocess.call([config['paths']['rsync_script']])
+    
             time.sleep(18)
             screen.fill(bg_color)
             screen.blit(url_text_show, (350, 940))
