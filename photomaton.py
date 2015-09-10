@@ -31,7 +31,6 @@ def parser():
 def get_config(filename):
     parser = SafeConfigParser()
     parser.read(filename)
-    #import pdb; pdb.set_trace()
     return parser._sections
 
 
@@ -79,6 +78,48 @@ def countdown_timer(screen, config, bg_color, ticks=2):
         screen.blit(countdown_text_clear, (100, 400))
         pygame.display.update()
 
+def pics_assembly(config, pic_names, finalpicname, finalpic):
+    liste = []
+    if config['convert']['pre_options'] :
+        liste.extend([config['convert']['pre_options']])
+
+    liste.extend([config['convert']['binary_path'],
+                '-quality', config['convert']['quality'], 
+                config['paths']['layout_path'],
+                 '-gravity', config['convert']['gravity']] ) 
+            
+    for photo_id in range(0, int(config['pics']['seq_photo']) ):
+        liste.extend([pic_names[photo_id], "-geometry",
+                     config['pics']['position'+photo_id],'-composite'])
+            
+    if config['qrcode'] :
+    # build qrcode
+        build_qrcode(finalpicname, config['msgs']['msg_url'],
+                     config['qrcode']['qrcode_name'])
+        liste.extend([config['qrcode']['qrcode_name'], '-geometry', 
+                      config['qrcode']['position'], '-composite'])
+
+    
+    subprocess.call(liste)
+
+
+def pics_assembly2(config):
+    subprocess.call(['nice', '-n -9', config['paths']['convert_path'],
+                             '-quality', '90', config['paths']['layout_path'],
+                             "-gravity", "southwest", pic_names[0],
+                             "-geometry", config['pics']['']"+100+1100", "-composite",
+                             pic_names[1], "-geometry", "+1030+1100",
+                             "-composite", pic_names[2], "-geometry",
+                             "+100+400", "-composite", pic_names[3],
+                             "-geometry", "+1030+400", "-composite",
+                             config['qrcode']['qrcode_name'],
+                             '-geometry', '+700+100',
+                             '-composite', finalpic])
+
+make_thumbnail(config, finalpic):
+    subprocess.call([config['paths']['convert_path'], finalpic,
+                     '-resize', config['pics']['thumbnail_size'],
+                             finalpic + '.thumbnail.jpg'])
 
 def setup_gpio():
     GPIO.setmode(GPIO.BOARD)
@@ -106,7 +147,7 @@ def main(config):
     bg_color = pygame.Color(config['pyg']['screen_bg_color'])
     pygame.init()
     pygame.mouse.set_visible(False)
-    pygame.mixer.music.load('shot.wav')
+    #pygame.mixer.music.load('shot.wav')
 
     # fullscreen settings :
 
@@ -190,7 +231,7 @@ def main(config):
                 pygame.display.update()
                 time.sleep(1)
                 switch_light()
-                pygame.mixer.music.play()
+                #pygame.mixer.music.play()
                 fname = '%s_%02d.jpg' % (os.path.join(config['paths']['pics_dir'],
                                                       now),
                                          photo_nb)
@@ -215,34 +256,16 @@ def main(config):
             finalpic = '%s%s' % (os.path.join(config['paths']['pics_dir'], now),
                                  config['prog']['pic_name'])
 
-            # build qrcode
-            build_qrcode(finalpicname, config['msgs']['msg_url'],
-                         config['qrcode']['qrcode_name'])
-
-            subprocess.call(['nice', '-n -9', config['paths']['convert_path'],
-                             '-quality', '90', config['paths']['layout_path'],
-                             "-gravity", "southwest", pic_names[0],
-                             "-geometry", "+100+1100", "-composite",
-                             pic_names[1], "-geometry", "+1030+1100",
-                             "-composite", pic_names[2], "-geometry",
-                             "+100+400", "-composite", pic_names[3],
-                             "-geometry", "+1030+400", "-composite",
-                             config['qrcode']['qrcode_name'],
-                             '-geometry', '+700+100',
-                             '-composite', finalpic])
-
+            final_assembly()
             layout = pygame.image.load(finalpic)
-            # qrcodelayout = pygame.image.load(qrcode_name)
             screen.fill(bg_color)
             screen.blit(pygame.transform.scale(layout, (1920 / 2, 1920 / 2)),
                         (136, 16))
-            # screen.blit(pygame.transform.scale(qrcodelayout, (150,150)),
-            #             (450,800))
             screen.blit(url_text_show, (350, 950))
             pygame.display.update()
-            subprocess.call([config['paths']['convert_path'], finalpic,
-                             '-resize', '200x200',
-                             finalpic + '.thumbnail.jpg'])
+            
+            make_thumbnail(config, finalpic)
+
             subprocess.call([config['paths']['rsync_script']])
             time.sleep(18)
             screen.fill(bg_color)
