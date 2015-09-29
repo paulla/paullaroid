@@ -13,7 +13,6 @@ import RPi.GPIO as GPIO
 
 from pygame.locals import KEYDOWN, K_ESCAPE, K_SPACE, K_q, QUIT
 from datetime import datetime
-from qrcode import QRCode, constants
 from ConfigParser import SafeConfigParser
 
 
@@ -50,6 +49,7 @@ def create_label(text, font, size, color=pygame.Color('black')):
 
 
 def build_qrcode(finalpicname, msg_url, qrcode_name):
+    from qrcode import QRCode, constants
     qr = QRCode(version=1,
                 error_correction=constants.ERROR_CORRECT_L,
                 box_size=8, border=1, )
@@ -107,7 +107,7 @@ def pics_assembly2(config):
     subprocess.call(['nice', '-n -9', config['paths']['convert_path'],
                              '-quality', '90', config['paths']['layout_path'],
                              "-gravity", "southwest", pic_names[0],
-                             "-geometry", config['pics']['']"+100+1100", "-composite",
+                             "-geometry", config['pics']['']+"+100+1100", "-composite",
                              pic_names[1], "-geometry", "+1030+1100",
                              "-composite", pic_names[2], "-geometry",
                              "+100+400", "-composite", pic_names[3],
