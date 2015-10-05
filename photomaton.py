@@ -107,28 +107,29 @@ def countdown_timer(screen, config, bg_color, ticks=2):
         pygame.display.update()
 
 def pics_assembly(config, pic_names, finalpicname, finalpic):
-    args = []
+    convert_args = []
     if config['convert'].get('pre_options'):
-        args.extend([config['convert'].get('pre_options')])
+        convert_args.extend([config['convert'].get('pre_options')])
 
-    args.extend([config['convert'].get('binary_path'),
+    convert_args.extend([config['convert'].get('binary_path'),
                 '-quality', config['convert'].get('quality'), 
                 config['paths'].get('layout_path'),
                  '-gravity', config['convert'].get('gravity')]) 
             
     for photo_id in range(0, int(config['prog']['seq_photo'])):
-        args.extend([pic_names[photo_id], "-geometry",
+        convert_args.extend([pic_names[photo_id], "-geometry",
                      config['convert']['position' + str(photo_id)],'-composite'])
             
     if config['qrcode']:
     # build qrcode
         build_qrcode(finalpicname, config['msgs']['msg_url'],
                      config['qrcode']['qrcode_name'])
-        args.extend([config['qrcode']['qrcode_name'], '-geometry', 
+        convert_args.extend([config['qrcode']['qrcode_name'], '-geometry', 
                       config['qrcode']['position'], '-composite'])
 
-    
-    subprocess.call(args)
+    convert_args.append(finalpicname)
+    import pdb; pdb.set_trace() 
+    subprocess.call(convert_args)
 
 
 def pics_assembly2(config):
@@ -173,7 +174,6 @@ def setup_screen(bg_color):
     return screen
 
 def setup_camera(bg_color):
-    
     camera = picamera.PiCamera()
 
     cam_video_width, cam_video_height = picamera.PiCamera.MAX_VIDEO_RESOLUTION
@@ -186,9 +186,8 @@ def setup_camera(bg_color):
     camera.resolution = (video_surface_width, video_surface_height)
     camera.preview_window = (140, 200, video_surface_width,
                              video_surface_height)
-    camera.start_preview()
 
-    return camera
+    return camera, video_surface_width, video_surface_height
 
 def main(config):
     setup_env(config)
@@ -206,9 +205,9 @@ def main(config):
     
 	
     setup_gpio()
-
-    #camera = setup_camera(bg_color)
-
+    
+    camera, video_surface_width, video_surface_height = setup_camera(bg_color)
+    camera.start_preview()
     pygame.display.flip()
 
     loop_value = True
@@ -245,9 +244,9 @@ def main(config):
             text_clear(screen, bg_color, **text_param['msg_title'])
             
 
-    #        camera.stop_preview()
-     #       camera.resolution = (int(config['cam']['cam_image_width']),
-       #                          int(config['cam']['cam_image_height']))
+            camera.stop_preview()
+            camera.resolution = (int(config['cam']['cam_image_width']),
+                                 int(config['cam']['cam_image_height']))
             seq_photo = int(config['prog']['seq_photo'])
             # time.sleep(1)
             pic_names = []
@@ -263,7 +262,7 @@ def main(config):
                                                       now),
                                          photo_nb)
                 pic_names.append(fname)
-                #camera.capture(fname)
+                camera.capture(fname)
                 state = GPIO.input(11)
                 time.sleep(0.5)
                 switch_light(state)
@@ -272,10 +271,10 @@ def main(config):
             text_param['msg_assembly'] = get_text_param(config, 'msg_assembly')
             text_show(screen, **text_param['msg_assembly'])
 
-      #      camera.preview_window = (32, 24, video_surface_width,
-       #                              video_surface_height)
-            #camera.resolution = (video_surface_width, video_surface_height)
-            finalpicname = '%s%s' % (now, config['prog']['pic_name'])
+            camera.preview_window = (32, 24, video_surface_width,
+                                     video_surface_height)
+            camera.resolution = (video_surface_width, video_surface_height)
+            finalpicname = '%s%s' % (os.path.join(config['paths']['pics_dir'], now), config['prog']['pic_name'])
             finalpic = '%s%s' % (os.path.join(config['paths']['pics_dir'], now),
                                  config['prog']['pic_name'])
 
@@ -289,16 +288,16 @@ def main(config):
             text_param['msg_url']  = get_text_param(config, 'msg_url')
             text_show(screen, **text_param['msg_url'])
  
+            if config['convert'].get('thumbnail_size'): 
+                make_thumbnail(config, finalpic)
             
-            make_thumbnail(config, finalpic)
-            
-            if config['paths']['rsync_script']:
+            if config['paths'].get('rsync_script'):
                 subprocess.call([config['paths']['rsync_script']])
     
             time.sleep(18)
             screen.fill(bg_color)
             text_show(screen, **text_param['msg_url'])
-        #    camera.start_preview()
+            camera.start_preview()
 
 
 if __name__ == "__main__":
