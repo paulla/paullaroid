@@ -45,6 +45,7 @@ def get_font(font, size):
 def create_label(text, font, size, color=pygame.Color('black')):
     """Create pygame label."""
     font = get_font(font, size)
+    import pdb; pdb.set_trace()
     return font.render(text, 0, color)
 
 def get_text_param(config, text_id):
@@ -58,6 +59,14 @@ def get_text_param(config, text_id):
 
     return text_param
 
+def get_camera_param(config):
+    camera_param = dict()
+    camera_param['positions'] = config['camera'].get('positions').split(',')
+    camera_param['brightness'] = config.get('camera').get('brightness')
+    camera_param['cam_image_width'] = config.get('camera').get('cam_image_width')
+    camera_param['cam_image_height'] = config.get('camera').get('cam_image_height')
+    
+    return camera_param
 
 def text_show(screen, text, font, size, color, positions):
     """ show text. """
@@ -173,7 +182,7 @@ def setup_screen(bg_color):
 
     return screen
 
-def setup_camera(bg_color):
+def setup_camera(bg_color, brightness, screen ):
     camera = picamera.PiCamera()
 
     cam_video_width, cam_video_height = picamera.PiCamera.MAX_VIDEO_RESOLUTION
@@ -182,9 +191,15 @@ def setup_camera(bg_color):
     video_surface_height = cam_video_height / 2
     
     camera.preview_fullscreen = False
-    camera.brightness = 50
+    camera.brightness = int(brightness)
     camera.resolution = (video_surface_width, video_surface_height)
-    camera.preview_window = (140, 200, video_surface_width,
+    width, height = screen.get_size()
+    left = (width - video_surface_width) / 2
+    top = (height - video_surface_height) / 2
+    import pdb; pdb.set_trace()
+
+    
+    camera.preview_window = (left, top, video_surface_width,
                              video_surface_height)
 
     return camera, video_surface_width, video_surface_height
@@ -199,14 +214,22 @@ def main(config):
     # fullscreen settings :
     screen = setup_screen(bg_color)
 
-    text_param = dict()
+    text_param = {}
     text_param['msg_find_your_pic'] = get_text_param(config, 'msg_find_your_pic')
+    text_param['msg_do'] = get_text_param(config, 'msg_do') 
+    text_param['msg_title'] = get_text_param(config, 'msg_title') 
+    text_param['msg_smile'] = get_text_param(config, 'msg_smile') 
+    text_param['msg_assembly'] = get_text_param(config, 'msg_assembly')
+    text_param['msg_url']  = get_text_param(config, 'msg_url')
+
     text_show(screen, **text_param['msg_find_your_pic'] )
     
 	
     setup_gpio()
     
-    camera, video_surface_width, video_surface_height = setup_camera(bg_color)
+    camera_param = get_camera_param(config)
+
+    camera, video_surface_width, video_surface_height = setup_camera(bg_color, camera_param['brightness'], screen )
     camera.start_preview()
     pygame.display.flip()
 
@@ -221,7 +244,6 @@ def main(config):
                 if event.key == K_SPACE:
                     countdown_timer(screen, config, bg_color)
 
-	text_param['msg_do'] = get_text_param(config, 'msg_do') 
         text_show(screen, **text_param['msg_do'])
 
 
@@ -233,8 +255,6 @@ def main(config):
         if not GPIO.input(15) or do:
 
             do = False
-	    text_param['msg_title'] = get_text_param(config, 'msg_title') 
-	    text_param['msg_smile'] = get_text_param(config, 'msg_smile') 
 
 
             text_clear(screen, bg_color, **text_param['msg_do'])
@@ -245,8 +265,8 @@ def main(config):
             
 
             camera.stop_preview()
-            camera.resolution = (int(config['cam']['cam_image_width']),
-                                 int(config['cam']['cam_image_height']))
+            camera.resolution = (int(config['camera']['cam_image_width']),
+                                 int(config['camera']['cam_image_height']))
             seq_photo = int(config['prog']['seq_photo'])
             # time.sleep(1)
             pic_names = []
@@ -268,7 +288,6 @@ def main(config):
                 switch_light(state)
                 text_clear(screen, bg_color, **text_param['msg_smile'])
 
-            text_param['msg_assembly'] = get_text_param(config, 'msg_assembly')
             text_show(screen, **text_param['msg_assembly'])
 
             camera.preview_window = (32, 24, video_surface_width,
@@ -285,7 +304,6 @@ def main(config):
                         (136, 16))
            
 
-            text_param['msg_url']  = get_text_param(config, 'msg_url')
             text_show(screen, **text_param['msg_url'])
  
             if config['convert'].get('thumbnail_size'): 
