@@ -5,7 +5,7 @@ Merci à Xel (https://github.com/XeL64) pour le lancement du projet !
 PS : Très gros nettoyage à faire au niveau du code ;)
 
 
-*Notes concernant le photomaton version PyConFr
+>>> Notes concernant le photomaton version PyConFr
 
 - Coordonnées des photos dans le background du photomaton pour la PyConFr :
     Photo Haut Gauche : 93,91
