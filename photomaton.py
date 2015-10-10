@@ -45,8 +45,7 @@ def get_font(font, size):
 def create_label(text, font, size, color=pygame.Color('black')):
     """Create pygame label."""
     font = get_font(font, size)
-    import pdb; pdb.set_trace()
-    return font.render(text, 0, color)
+    return font.render(text.decode('utf-8'), 0, color)
 
 def get_text_param(config, text_id):
     """Make dict with all param of a message."""
@@ -109,10 +108,10 @@ def countdown_timer(screen, config, bg_color, ticks=2):
                                            200, pygame.Color('black'))
         countdown_text_clear = create_label(str(tick), config['pyg']['font'],
                                             200, bg_color)
-        screen.blit(countdown_text_show, (100, 400))
+        screen.blit(countdown_text_show, (762, 474))
         pygame.display.update()
         time.sleep(1)
-        screen.blit(countdown_text_clear, (100, 400))
+        screen.blit(countdown_text_clear, (762, 474))
         pygame.display.update()
 
 def pics_assembly(config, pic_names, finalpicname, finalpic):
@@ -137,7 +136,6 @@ def pics_assembly(config, pic_names, finalpicname, finalpic):
                       config['qrcode']['position'], '-composite'])
 
     convert_args.append(finalpicname)
-    import pdb; pdb.set_trace() 
     subprocess.call(convert_args)
 
 
@@ -160,7 +158,7 @@ def make_thumbnail(config, finalpic):
                              finalpic + '.thumbnail.jpg'])
 
 def setup_gpio():
-    GPIO.setmode(GPIO.BOARD)
+    GPIO.setmode(GPIO.BCM)
     GPIO.setup(11, GPIO.OUT)
     GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -196,9 +194,7 @@ def setup_camera(bg_color, brightness, screen ):
     width, height = screen.get_size()
     left = (width - video_surface_width) / 2
     top = (height - video_surface_height) / 2
-    import pdb; pdb.set_trace()
 
-    
     camera.preview_window = (left, top, video_surface_width,
                              video_surface_height)
 
@@ -249,7 +245,6 @@ def main(config):
 
         pygame.display.update()
         do = False
-        import pdb; pdb.set_trace()
       
         # catch GPIO.input
         if not GPIO.input(15) or do:
@@ -290,7 +285,7 @@ def main(config):
 
             text_show(screen, **text_param['msg_assembly'])
 
-            camera.preview_window = (32, 24, video_surface_width,
+            camera.preview_window = (320, 330, video_surface_width,
                                      video_surface_height)
             camera.resolution = (video_surface_width, video_surface_height)
             finalpicname = '%s%s' % (os.path.join(config['paths']['pics_dir'], now), config['prog']['pic_name'])
