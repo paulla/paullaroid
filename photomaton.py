@@ -89,7 +89,7 @@ def build_qrcode(finalpicname, msg_url, qrcode_name):
     qr = QRCode(version=1,
                 error_correction=constants.ERROR_CORRECT_L,
                 box_size=8, border=1, )
-    qr.add_data(msg_url + finalpicname)
+    qr.add_data(msg_url + '/' + finalpicname)
     qr.make()
     img = qr.make_image()
     img.save(qrcode_name)
@@ -135,7 +135,7 @@ def pics_assembly(config, pic_names, finalpicname, finalpic):
         convert_args.extend([config['qrcode']['qrcode_name'], '-geometry', 
                       config['qrcode']['position'], '-composite'])
 
-    convert_args.append(finalpicname)
+    convert_args.append(finalpic)
     subprocess.call(convert_args)
 
 
@@ -160,7 +160,7 @@ def make_thumbnail(config, finalpic):
 def setup_gpio():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(11, GPIO.OUT)
-    GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 def setup_env(config):
@@ -187,7 +187,7 @@ def setup_camera(bg_color, brightness, screen ):
 
     video_surface_width = cam_video_width / 2
     video_surface_height = cam_video_height / 2
-    
+    camera.rotation = 90 
     camera.preview_fullscreen = False
     camera.brightness = int(brightness)
     camera.resolution = (video_surface_width, video_surface_height)
@@ -214,7 +214,10 @@ def main(config):
     text_param['msg_find_your_pic'] = get_text_param(config, 'msg_find_your_pic')
     text_param['msg_do'] = get_text_param(config, 'msg_do') 
     text_param['msg_title'] = get_text_param(config, 'msg_title') 
-    text_param['msg_smile'] = get_text_param(config, 'msg_smile') 
+    text_param['msg_smile_1'] = get_text_param(config, 'msg_smile_1') 
+    text_param['msg_smile_2'] = get_text_param(config, 'msg_smile_2') 
+    text_param['msg_smile_3'] = get_text_param(config, 'msg_smile_3') 
+    text_param['msg_smile_4'] = get_text_param(config, 'msg_smile_4') 
     text_param['msg_assembly'] = get_text_param(config, 'msg_assembly')
     text_param['msg_url']  = get_text_param(config, 'msg_url')
 
@@ -247,7 +250,7 @@ def main(config):
         do = False
       
         # catch GPIO.input
-        if not GPIO.input(15) or do:
+        if not GPIO.input(4) or do:
 
             do = False
 
@@ -269,7 +272,7 @@ def main(config):
             for photo_nb in range(1, seq_photo + 1):
                 countdown_timer(screen, config, bg_color)
 
-                text_show(screen, **text_param['msg_smile'])
+                text_show(screen, **text_param["msg_smile_%d" % photo_nb])
                 time.sleep(1)
                 switch_light()
                 #pygame.mixer.music.play()
@@ -281,14 +284,15 @@ def main(config):
                 state = GPIO.input(11)
                 time.sleep(0.5)
                 switch_light(state)
-                text_clear(screen, bg_color, **text_param['msg_smile'])
+                text_clear(screen, bg_color, **text_param['msg_smile_%d' % photo_nb])
 
             text_show(screen, **text_param['msg_assembly'])
 
             camera.preview_window = (320, 330, video_surface_width,
                                      video_surface_height)
             camera.resolution = (video_surface_width, video_surface_height)
-            finalpicname = '%s%s' % (os.path.join(config['paths']['pics_dir'], now), config['prog']['pic_name'])
+            finalpicname = '%s%s' % (now, config['prog']['pic_name'])
+           # finalpicname = '%s%s' % (os.path.join(config['paths']['pics_dir'], now), config['prog']['pic_name'])
             finalpic = '%s%s' % (os.path.join(config['paths']['pics_dir'], now),
                                  config['prog']['pic_name'])
 
