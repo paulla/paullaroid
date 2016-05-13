@@ -15,11 +15,11 @@ from configparser import ExtendedInterpolation
 from qrcode import QRCode
 from qrcode import constants
 
-def build_qrcode(finalpicname, msg_url, qrcode_name):
+def build_qrcode(url, qrcode_name):
     qr = QRCode(version=1,
                 error_correction=constants.ERROR_CORRECT_L,
                 box_size=8, border=1, )
-    qr.add_data(msg_url + '/' + finalpicname)
+    qr.add_data(url)
     qr.make()
     img = qr.make_image()
     img.save(qrcode_name)
