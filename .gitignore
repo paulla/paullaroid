@@ -37,4 +37,9 @@ nosetests.xml
 #
 *~
 
+#data
+_pics/*
+
+#save
+*.save
 \#

@@ -1,10 +1,16 @@
-# photomaton
+.. contents::
+
+Introduction
+============
+
+Photomaton by PauLLA and MIPS-LAB
+
+
 Le photomaton est une super machine qui vous prend en photo, à base de Rpi.
 Merci à Xel (https://github.com/XeL64) pour le lancement du projet !
 
-PS : Très gros nettoyage à faire au niveau du code ;)
-
-
+NOTES
+======
 >>> Notes concernant le photomaton version PyConFr
 
 - Coordonnées des photos dans le background du photomaton pour la PyConFr :
