@@ -39,6 +39,7 @@ nosetests.xml
 
 #data
 _pics/*
+*.png
 
 #save
 *.save
