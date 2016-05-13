@@ -13,6 +13,7 @@ INSTALL
 =======
 
  python bootstrap-buildout.py
+
  bin/buildout 
 
 
