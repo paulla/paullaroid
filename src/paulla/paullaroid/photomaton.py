@@ -223,24 +223,27 @@ class Photos:
     
         if self.convert.get('qrcode_position'):
         #  build qrcode
-            build_qrcode(self.now + '.jpg',self. convert.get('qrcode_url'),
-                         'qrcode.png')
-            convert_args.extend(['qrcode.png', '-geometry',
+            url = self.convert.get('qrcode_url') + self.now + 'jpg'
+            build_qrcode(url, 'qrcode_image.png')
+            convert_args.extend(['qrcode_image.png', '-geometry',
                           self.convert.get('qrcode_position'), '-composite'])
     
         convert_args.append(finalpic)
-        import pdb; pdb.set_trace()
         subprocess.call(convert_args)
+        return finalpic
 
 
 def play(config):
     setup_env(config)
     setup_gpio()
     msg_textes = setup_msg(config)
+    build_qrcode(config.get('defaults', 'url'), 'qrcode_site.png')
+
 
     bg_color = pygame.Color(config.get('pyg', 'screen_bg_color'))
 
     screen = setup_screen(bg_color)
+
 
    #  DATA
    #  pygame.mixer.music.load('shot.wav')
@@ -289,11 +292,10 @@ def play(config):
 
             msg_textes['assembly'].show(screen)
 
-            photo.pics_assembly()# config, pic_names, finalpicname, finalpic)
-            import pdb; pdb.set_trace()
+            finalpic = photo.pics_assembly()
             layout = pygame.image.load(finalpic)
             screen.fill(bg_color)
-            screen.blit(pygame.transform.scale(layout, (1920 / 2, 1920 / 2)),
+            screen.blit(pygame.transform.scale(layout, (int(1920 / 2), int(1920 / 2))),
                         (136, 16))
 
 
@@ -309,7 +311,7 @@ def play(config):
             screen.fill(bg_color)
             msg_textes['url'].show(screen)
             my_cam.start_preview()
-            layout_qrcode = pygame.image.load(config.get('qrcode', 'qrcode_name'))
+            layout_qrcode = pygame.image.load('qrcode_site.png')
             screen.blit( layout_qrcode, (1136, 16))
 
             pygame.display.update()
