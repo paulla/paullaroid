@@ -68,18 +68,18 @@ def switch_light():
 
 class CountdowTimer(object):
     """Countdown with final text."""
-    def __init__(self,  bg_color, font, size=200, nbTicks=2, positions = '0, 0', color='black'):
-        self.ticks = {}
-
-        for tick in range(int(nbTicks), 0, -1):
-            self.ticks[tick] = MsgTexte(bg_color, str(tick), font, size, positions, color)
+    def __init__(self,  bg_color, font, size=200, nombre=2, positions = '0, 0', color='black'):
+        self.ticks = []
+        for tick in range(int(nombre)): 
+            self.ticks.append(MsgTexte(bg_color, str(int(nombre) - tick), font, size, positions, color))
 
 
     def show(self, screen):
+	
         for tick in self.ticks:
-            self.ticks[tick].show(screen)
+            tick.show(screen)
             time.sleep(1)
-            self.ticks[tick].clear(screen)
+            tick.clear(screen)
 
 
 
@@ -184,29 +184,28 @@ class Photos:
         self.timer = timer 
         self.convert = convert
 
-    def take(self, message, screen):
+    def take(self, messages, screen):
+        nombre = len([key for key in messages.keys() if key.startswith('smile_')])
         self.now = datetime.now().strftime(self.date_fmt)
         self.cam.stop_preview()
         self.cam.set_resolution(int(self.image_width), int(self.image_height))
         for photo_nb in range(1, self.seq_photo+1):
+            num = str(randint(1,nombre)) 
             self.timer.show(screen)
-            message.show(screen)
+            messages['smile_'+num].show(screen)
             time.sleep(1)
             switch_light()
-                #pygame.mixer.music.play();
+            #pygame.mixer.music.play()
             fname = '%s_%02d.jpg' % (os.path.join(self.pics_dir, self.now), photo_nb)
             self.pic_names.append(fname)
-            #self.cam.set_resolution(int(self.image_width),int(self.image_height))
             self.cam.capture(fname)
             time.sleep(0.5)
             switch_light()
-            message.clear(screen)
+            messages['smile_'+num].clear(screen)
 
 
     def pics_assembly(self):
         finalpic = '%s.jpg' % (os.path.join(self.pics_dir, self.now))
-        #finalpic = '%s%s' % (os.path.join(config.get('paths', 'pics_dir'), now),
-        #                             config.get('prog', 'pic_name'))
 
         convert_args = []
         if self.convert.get('pre_options'):
@@ -222,7 +221,6 @@ class Photos:
                          self.convert.get('position' + str(photo_id)),'-composite'])
     
         if self.convert.get('qrcode_position'):
-        #  build qrcode
             url = self.convert.get('qrcode_url') + self.now + 'jpg'
             build_qrcode(url, 'qrcode_image.png')
             convert_args.extend(['qrcode_image.png', '-geometry',
@@ -237,18 +235,15 @@ def play(config):
     setup_env(config)
     setup_gpio()
     msg_textes = setup_msg(config)
-    build_qrcode(config.get('defaults', 'url'), 'qrcode_site.png')
+    timer = CountdowTimer(bg_color_text, **dict(config.items('countdown')))
+    photo = Photos(my_cam, timer, convert = dict(config.items('convert')), **dict(config.items('image')))
 
+    build_qrcode(config.get('defaults', 'url'), 'qrcode_site.png')
 
     bg_color = pygame.Color(config.get('pyg', 'screen_bg_color'))
 
     screen = setup_screen(bg_color)
 
-
-   #  DATA
-   #  pygame.mixer.music.load('shot.wav')
-
-    # fullscreen settings :
 
     msg_textes['find_pic'].show(screen)
     my_cam = MyCamera(screen = screen, **dict(config.items('camera')))
@@ -264,15 +259,12 @@ def play(config):
             if event.type == KEYDOWN:
                 if event.key == K_q or event.key == K_ESCAPE:
                     loop_value = False
-                #if event.key == K_SPACE:
-        #    timer.show()
 
         msg_textes['do'].show(screen)
 
         pygame.display.update()
         do = False
 
-        # catch GPIO.input
         if not GPIO.input(4) or do:
 
             do = False
@@ -284,22 +276,17 @@ def play(config):
 
             msg_textes['title'].clear(screen)
             bg_color_text =  config.get('pyg','screen_bg_color')
-            timer = CountdowTimer(bg_color_text, config.get('pyg', 'font'), nbTicks= config.get('pyg', 'nb_ticks'))
-            photo = Photos(my_cam, timer, convert = dict(config.items('convert')), **dict(config.items('image')))
 	
-            num = str(randint(1,4)) # TODO recup le nb de smile 
-            photo.take(msg_textes['smile_'+num], screen)
+            photo.take(msg_textes,  screen)
 
             msg_textes['assembly'].show(screen)
 
             finalpic = photo.pics_assembly()
             layout = pygame.image.load(finalpic)
             screen.fill(bg_color)
-            screen.blit(pygame.transform.scale(layout, (int(1920 / 2), int(1920 / 2))),
-                        (136, 16))
+            screen.blit(pygame.transform.scale(layout, (int(1920 / 2), int(1920 / 2))), (136, 16))
 
-
-            msg_textes['url'].show(screen)
+            msg_textes['find_pic'].show(screen)
 
             if config.get('convert', 'thumbnail_size'):
                 make_thumbnail(config, finalpic)
@@ -309,7 +296,7 @@ def play(config):
 
             time.sleep(10)
             screen.fill(bg_color)
-            msg_textes['url'].show(screen)
+            msg_textes['find_pic'].show(screen)
             my_cam.start_preview()
             layout_qrcode = pygame.image.load('qrcode_site.png')
             screen.blit( layout_qrcode, (1136, 16))
