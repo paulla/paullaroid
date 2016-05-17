@@ -205,7 +205,7 @@ class Photos:
 
 
     def pics_assembly(self):
-        finalpic = '%s.jpg' % (os.path.join(self.pics_dir, self.now))
+        finalpic = '%s_THSF2016.jpg' % (os.path.join(self.pics_dir, self.now))
 
         convert_args = []
         if self.convert.get('pre_options'):
@@ -217,7 +217,7 @@ class Photos:
                      '-gravity', self.convert.get('gravity','northwest')])
     
         for photo_id in range(0, self.seq_photo):
-            convert_args.extend([self.pic_names[photo_id], "-geometry",
+            convert_args.extend([self.pic_names.pop(0), "-geometry",
                          self.convert.get('position' + str(photo_id)),'-composite'])
     
         if self.convert.get('qrcode_position'):
@@ -291,8 +291,8 @@ def play(config):
             if config.get('convert', 'thumbnail_size'):
                 make_thumbnail(config, finalpic)
 
-            #if config.get('paths', 'rsync_script'):
-            #    subprocess.call([config.get('paths', 'rsync_script')])
+            if config.get('paths', 'rsync_script'):
+                subprocess.call([config.get('paths', 'rsync_script')])
 
             time.sleep(10)
             screen.fill(bg_color)
