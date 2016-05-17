@@ -235,18 +235,19 @@ def play(config):
     setup_env(config)
     setup_gpio()
     msg_textes = setup_msg(config)
-    timer = CountdowTimer(bg_color_text, **dict(config.items('countdown')))
-    photo = Photos(my_cam, timer, convert = dict(config.items('convert')), **dict(config.items('image')))
 
     build_qrcode(config.get('defaults', 'url'), 'qrcode_site.png')
 
-    bg_color = pygame.Color(config.get('pyg', 'screen_bg_color'))
+    bg_color_text =  config.get('pyg','screen_bg_color')
+    bg_color = pygame.Color(bg_color_text)
+    timer = CountdowTimer(bg_color_text, **dict(config.items('countdown')))
 
     screen = setup_screen(bg_color)
 
 
     msg_textes['find_pic'].show(screen)
     my_cam = MyCamera(screen = screen, **dict(config.items('camera')))
+    photo = Photos(my_cam, timer, convert = dict(config.items('convert')), **dict(config.items('image')))
 
 
     my_cam.start_preview()
@@ -275,7 +276,6 @@ def play(config):
             time.sleep(3)
 
             msg_textes['title'].clear(screen)
-            bg_color_text =  config.get('pyg','screen_bg_color')
 	
             photo.take(msg_textes,  screen)
 
