@@ -90,7 +90,7 @@ def make_thumbnail(config, finalpic):
 
 def setup_gpio():
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(11, GPIO.OUT)
+    GPIO.setup(11, GPIO.OUT, initial=GPIO.LOW)
     GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
