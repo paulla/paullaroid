@@ -70,12 +70,11 @@ class CountdowTimer(object):
     """Countdown with final text."""
     def __init__(self,  bg_color, font, size=200, nombre=2, positions = '0, 0', color='black'):
         self.ticks = []
-        for tick in range(int(nombre)): 
+        for tick in range(int(nombre)):
             self.ticks.append(MsgTexte(bg_color, str(int(nombre) - tick), font, size, positions, color))
 
 
     def show(self, screen):
-	
         for tick in self.ticks:
             tick.show(screen)
             time.sleep(1)
@@ -181,7 +180,7 @@ class Photos:
         self.cam = cam
         self.image_width = int(image_width)
         self.image_height = int(image_height)
-        self.timer = timer 
+        self.timer = timer
         self.convert = convert
 
     def take(self, messages, screen):
@@ -190,7 +189,7 @@ class Photos:
         self.cam.stop_preview()
         self.cam.set_resolution(int(self.image_width), int(self.image_height))
         for photo_nb in range(1, self.seq_photo+1):
-            num = str(randint(1,nombre)) 
+            num = str(randint(1,nombre))
             self.timer.show(screen)
             messages['smile_'+num].show(screen)
             time.sleep(1)
@@ -210,22 +209,22 @@ class Photos:
         convert_args = []
         if self.convert.get('pre_options'):
             convert_args.append(self.convert.get('pre_options'))
-    
+
         convert_args.extend([self.convert.get('binary_path'),
                     '-quality', self.convert.get('quality'),
                     self.convert.get('layout_path'),
                      '-gravity', self.convert.get('gravity','northwest')])
-    
+
         for photo_id in range(0, self.seq_photo):
             convert_args.extend([self.pic_names.pop(0), "-geometry",
                          self.convert.get('position' + str(photo_id)),'-composite'])
-    
+
         if self.convert.get('qrcode_position'):
             url = self.convert.get('qrcode_url') + self.now + 'jpg'
             build_qrcode(url, 'qrcode_image.png')
             convert_args.extend(['qrcode_image.png', '-geometry',
                           self.convert.get('qrcode_position'), '-composite'])
-    
+
         convert_args.append(finalpic)
         subprocess.call(convert_args)
         return finalpic
@@ -276,7 +275,7 @@ def play(config):
             time.sleep(3)
 
             msg_textes['title'].clear(screen)
-	
+
             photo.take(msg_textes,  screen)
 
             msg_textes['assembly'].show(screen)
