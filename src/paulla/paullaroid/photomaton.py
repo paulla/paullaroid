@@ -204,7 +204,7 @@ class Photos:
 
 
     def pics_assembly(self):
-        finalpic = '%s_THSF2016.jpg' % (os.path.join(self.pics_dir, self.now))
+        finalpic = '%s_photomaton.jpg' % (os.path.join(self.pics_dir, self.now))
 
         convert_args = []
         if self.convert.get('pre_options'):
