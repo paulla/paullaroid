@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-"""PauLLA Photomaton, exposed on THDF 2015."""
+"""PauLLA Photomaton, exposed on THSF 2015."""
 
 import subprocess
 import sys
