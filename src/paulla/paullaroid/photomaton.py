@@ -85,7 +85,7 @@ class CountdowTimer(object):
 
 def make_thumbnail(config, finalpic):
     subprocess.call([config.get('paths', 'convert_path'), finalpic,
-                     '-resize', config.get('convert', 'thumbnail_size'),
+                     '-thumbnail', config.get('convert', 'thumbnail_size'),
                              finalpic + '.thumbnail.jpg'])
 
 
@@ -196,16 +196,17 @@ class Photos:
             time.sleep(1)
             switch_light()
             #pygame.mixer.music.play()
+             #ptmpfname = '/tmp/photomaton_processing.jpg'
             fname = '%s_%02d.jpg' % (os.path.join(self.pics_dir, self.now), photo_nb)
             self.pic_names.append(fname)
             self.cam.capture(fname)
-            time.sleep(0.5)
+            #ppubprocess.Popen(["/home/pi/dev/autolevel","-c","luminance",tmpfname,fname])
             switch_light()
             messages['smile_'+num].clear(screen)
 
 
     def pics_assembly(self):
-        finalpic = '%s_THSF2016.jpg' % (os.path.join(self.pics_dir, self.now))
+        finalpic = '%s_final.jpg' % (os.path.join(self.pics_dir, self.now))
 
         convert_args = []
         if self.convert.get('pre_options'):
@@ -240,6 +241,7 @@ def play(config):
 
     bg_color_text =  config.get('pyg','screen_bg_color')
     bg_color = pygame.Color(bg_color_text)
+    import pdb; pdb.set_trace()
     timer = CountdowTimer(bg_color_text, **dict(config.items('countdown')))
 
     screen = setup_screen(bg_color)
@@ -280,26 +282,29 @@ def play(config):
             photo.take(msg_textes,  screen)
 
             msg_textes['assembly'].show(screen)
-
             finalpic = photo.pics_assembly()
             layout = pygame.image.load(finalpic)
             screen.fill(bg_color)
-            screen.blit(pygame.transform.scale(layout, (int(1920 / 2), int(1920 / 2))), (136, 16))
-
+            screen.blit(pygame.transform.scale(layout, (int(1920 / 2), int(1920 / 2))), (350, 6))
             msg_textes['find_pic'].show(screen)
 
             if config.get('convert', 'thumbnail_size'):
                 make_thumbnail(config, finalpic)
 
             if config.get('paths', 'rsync_script'):
-                subprocess.call([config.get('paths', 'rsync_script')])
+                rsync_command = [config.get('paths', 'rsync_script')]             
+ 
+            if config.get('paths', 'rsync_params'):
+                rsync_command.append(config.get('paths', 'rsync_params') )
+                rsync_command.append(finalpic)
+                subprocess.call(rsync_command)
 
             time.sleep(10)
             screen.fill(bg_color)
             msg_textes['find_pic'].show(screen)
             my_cam.start_preview()
             layout_qrcode = pygame.image.load('qrcode_site.png')
-            screen.blit( layout_qrcode, (1136, 16))
+            screen.blit( layout_qrcode, n(1136, 16))
 
             pygame.display.update()
 
