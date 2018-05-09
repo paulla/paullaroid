@@ -27,10 +27,11 @@ NOTES
 >>> Notes concernant le photomaton version PyConFr
 
 - Coordonnées des photos dans le background du photomaton pour la PyConFr :
-    Photo Haut Gauche : 93,91
-    Photo Haut Droit  : 1027,91
-    Photo Bas Droit   : 1027,823
-    Photo Bas gauche  : 93,823
+    
+* Photo Haut Gauche : 27,27
+* Photo Haut Droit  : 1083,90
+* Photo Bas Droit   : 27,850
+* Photo Bas gauche  : 1105, 773
 
 - Couleur pour afficher URL et date
     gris : Héxa #808080 / RGB 128,128,128

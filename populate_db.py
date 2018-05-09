@@ -7,7 +7,7 @@ couch = couchdb.Server('http://127.0.0.1:5984')
 db = couch['paullaroid']
 
 
-events_gen = glob.iglob(os.path.join('_data','*')) #it's a
+"events_gen = glob.iglob(os.path.join('_data','*')) #it's a
 
 for event in events_gen:
     doc = { '_id' : os.path.basename(event), 'type_doc':'event'}

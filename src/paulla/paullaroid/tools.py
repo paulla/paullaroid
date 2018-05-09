@@ -10,7 +10,7 @@ import argparse
 import os
 
 from configparser import SafeConfigParser
-from configparser import ExtendedInterpolation 
+from configparser import ExtendedInterpolation
 
 from qrcode import QRCode
 from qrcode import constants
@@ -42,5 +42,4 @@ def get_config(filename):
     parser = SafeConfigParser(interpolation=ExtendedInterpolation())
     parser.read(filename)
 
-    return parser 
-
+    return parser
