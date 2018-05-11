@@ -222,7 +222,7 @@ class Photos:
                          self.convert.get('position' + str(photo_id)),'-composite'])
     
         if self.convert.get('qrcode_position'):
-            url = self.convert.get('qrcode_url') + self.now + 'jpg'
+            url = self.convert.get('qrcode_url') + '/' + self.now + '_final.jpg/raw/'
             build_qrcode(url, 'qrcode_image.png')
             convert_args.extend(['qrcode_image.png', '-geometry',
                           self.convert.get('qrcode_position'), '-composite'])
